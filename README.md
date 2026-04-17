@@ -1,15 +1,16 @@
-# AI Data Analyst Dashboard
+# Conversational AI Data Analyst
 
-A powerful full-stack application that transforms raw CSV data into actionable insights using Artificial Intelligence. Upload your datasets, ask questions in plain English, and receive structured analysis, interactive charts, and AI-generated summaries instantly.
+A powerful, ChatGPT-like full-stack application that transforms raw CSV data into actionable insights through a seamless conversational interface. Upload your datasets, chat with your data in plain English, and receive structured analysis, interactive charts, and AI-generated summaries instantly.
 
 ## 🚀 Key Features
 
-- **CSV Data Upload**: Seamlessly upload and parse CSV files with instant previews.
-- **Natural Language Querying**: Query your data using plain English (e.g., "Show me the top 5 sales in March").
+- **ChatGPT-Like Interface**: A modern, full-height chat layout with a scrollable area, message bubbles, and sticky input bar, making data analysis feel like a natural conversation.
+- **CSV Data Upload**: Seamlessly upload and parse CSV files to serve as the context for your conversation.
+- **Natural Language Querying**: Ask questions about your data in plain English (e.g., "Show me the top 5 sales in March").
 - **AI-Powered Analysis**: Uses Groq (Llama 3.3) to translate natural language into structured data operations (filtering, aggregation, grouping).
-- **Dynamic Visualizations**: Automatically generates relevant charts (Bar, Line, Area, etc.) based on your query results using Recharts.
-- **Smart Insights**: AI-generated human-readable summaries that highlight key trends and data points.
-- **Modern UI**: A clean, responsive dashboard built with React and Tailwind CSS.
+- **Dynamic Visualizations in Chat**: Automatically generates relevant charts (Bar, Line, Area, etc.) using Recharts right inside the AI's chat response.
+- **Smart Insights**: AI-generated human-readable summaries that highlight key trends and data points as conversational replies.
+- **Polished UX**: Skeleton loaders, typing indicators, auto-scrolling to the latest message, and responsive light/dark modes.
 
 ## 🛠️ Tech Stack
 
@@ -33,9 +34,9 @@ ai-dashboard/
 │   ├── services/       # Query parsing & data processing logic
 │   ├── uploads/        # Temporary storage for uploaded CSVs
 │   └── server.js       # Main server entry point
-├── frontend/           # React client application
+├── frontend/           # React client application (Conversational UI)
 │   ├── src/
-│   │   ├── components/ # UI Components & Chart wrappers
+│   │   ├── components/ # Chat UI Components & Chart wrappers
 │   │   ├── utils/      # Client-side helpers
 │   │   └── App.jsx     # Main application layout
 └── README.md           # Project documentation
