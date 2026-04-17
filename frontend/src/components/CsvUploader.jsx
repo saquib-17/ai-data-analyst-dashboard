@@ -12,6 +12,8 @@ const CsvUploader = () => {
   const [headers, setHeaders] = useState([]);
   const inputRef = useRef(null);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -88,7 +90,7 @@ const CsvUploader = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:5000/api/upload', {
+      const response = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         body: formData,
       });
