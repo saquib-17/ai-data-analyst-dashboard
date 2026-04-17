@@ -121,6 +121,10 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     });
 });
 
+app.get("/", (req, res) => {
+  res.send("🚀 AI Data Analyst Backend is Running!");
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
