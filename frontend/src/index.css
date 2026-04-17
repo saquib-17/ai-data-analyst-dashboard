@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#f8fafc] text-[#0f172a] font-sans antialiased transition-colors duration-300;
+  }
+  
+  .dark body {
+    @apply bg-[#0f172a] text-[#e2e8f0];
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white border border-slate-200 rounded-2xl shadow-sm transition-all duration-300;
+  }
+  
+  .dark .glass-panel {
+    @apply bg-[#1e293b] border-slate-700/50 shadow-md;
+  }
+  
+  .btn-primary {
+    @apply px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-medium rounded-xl shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.23)] hover:-translate-y-[1px] transition-all duration-300;
+  }
+
+  .dark .btn-primary {
+    @apply from-indigo-600 to-purple-600 shadow-[0_4px_14px_0_rgba(99,102,241,0.39)];
+  }
+
+  .input-glow {
+    @apply focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm;
+  }
+
+  .dark .input-glow {
+    @apply focus:ring-purple-500/20 focus:border-purple-500 bg-[#0f172a] border-slate-700 text-slate-200 placeholder:text-slate-500;
+  }
+}
