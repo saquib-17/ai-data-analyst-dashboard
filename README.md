@@ -1,5 +1,8 @@
 # Conversational AI Data Analyst
 
+## Deployment Link : 
+https://ai-data-analyst-dashboard-phi.vercel.app/
+
 A powerful, ChatGPT-like full-stack application that transforms raw CSV data into actionable insights through a seamless conversational interface. Upload your datasets, chat with your data in plain English, and receive structured analysis, interactive charts, and AI-generated summaries instantly.
 
 ## 🚀 Key Features
