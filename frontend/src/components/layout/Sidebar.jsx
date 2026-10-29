@@ -6,6 +6,8 @@ import {
   Sparkles,
   FileText,
   BarChart3,
+  BarChart2,
+  Table2,
   Plus,
   Crown,
   Settings,
@@ -14,7 +16,9 @@ import {
   ChevronDown,
   X,
   Trash2,
-  ChevronRight
+  ChevronRight,
+  Bot,
+  PieChart
 } from 'lucide-react';
 
 const formatRelativeTime = (isoString) => {
@@ -39,20 +43,33 @@ const Sidebar = ({
   onDeleteConversation,
   mobileOpen = false,
   setMobileOpen,
-  onOpenUpgrade
+  onOpenUpgrade,
+  onOpenSettings,
+  onOpenHelp
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'chat', label: 'Analysis Workspace', icon: MessageSquare },
-    { id: 'conversations', label: 'Conversations', icon: MessageSquare },
-    { id: 'datasets', label: 'Datasets', icon: Database },
+    { id: 'chat', label: 'AI Copilot', icon: Bot },
+    { id: 'charts', label: 'Chart Studio', icon: BarChart3 },
     { id: 'insights', label: 'Insights', icon: Sparkles },
+    { id: 'explorer', label: 'Data Explorer', icon: Table2 },
+    { id: 'datasets', label: 'Datasets', icon: Database },
+    { id: 'conversations', label: 'Conversations', icon: MessageSquare },
     { id: 'reports', label: 'Reports', icon: FileText },
-    { id: 'analytics-hub', label: 'Analytics Hub', icon: BarChart3 },
+    { id: 'analytics-hub', label: 'Analytics Hub', icon: BarChart2 },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   const handleNavClick = (viewId) => {
-    setCurrentView(viewId);
+    if (viewId === 'settings') {
+      onOpenSettings?.();
+      return;
+    }
+    if (viewId === 'charts' || viewId === 'explorer') {
+      setCurrentView(viewId === 'charts' ? 'chat' : 'schema');
+    } else {
+      setCurrentView(viewId);
+    }
     if (setMobileOpen) setMobileOpen(false);
   };
 
@@ -131,12 +148,15 @@ const Sidebar = ({
         </div>
 
         {/* Scrollable Middle: Navigation + Recent Conversations */}
-        <div className="flex-1 overflow-y-auto sidebar-scroll px-3 py-2 space-y-5">
+        <div className="flex-1 overflow-y-auto sidebar-scroll px-3 py-2 space-y-4 relative">
+          {/* Subtle Aurora Ambient Glow */}
+          <div className="absolute bottom-4 left-0 right-0 h-40 bg-gradient-to-tr from-cyan-500/10 via-indigo-500/15 to-purple-600/15 blur-2xl pointer-events-none" />
+
           {/* Primary Navigation Links */}
-          <nav className="space-y-1">
+          <nav className="space-y-1 relative z-10">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = currentView === item.id;
+              const isActive = currentView === item.id || (item.id === 'dashboard' && currentView === 'chat');
               return (
                 <button
                   key={item.id}
@@ -144,7 +164,7 @@ const Sidebar = ({
                   onClick={() => handleNavClick(item.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-[#202C4C] text-white font-semibold shadow-xs border border-white/15'
+                      ? 'bg-[#1E293B]/80 text-white font-semibold shadow-xs border border-white/10'
                       : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
@@ -155,22 +175,20 @@ const Sidebar = ({
             })}
           </nav>
 
-          {/* Decorative Divider Wave */}
-          <div className="relative h-6 flex items-center justify-center opacity-30 pointer-events-none">
-            <svg viewBox="0 0 200 24" className="w-full h-full stroke-indigo-400" fill="none">
-              <path d="M0 12 C 40 24, 60 0, 100 12 C 140 24, 160 0, 200 12" strokeWidth="1.5" />
-            </svg>
-          </div>
-
           {/* Recent Conversations List */}
-          <div>
+          <div className="relative z-10 pt-2">
             <div className="flex items-center justify-between px-3 mb-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Recent Conversations
               </span>
-              <span className="text-[10px] text-slate-400">
-                {conversations.length}
-              </span>
+              <button
+                type="button"
+                onClick={onNewConversation}
+                className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+                title="Start new conversation"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
             </div>
 
             {conversations.length === 0 ? (
@@ -179,7 +197,7 @@ const Sidebar = ({
               </div>
             ) : (
               <div className="space-y-1">
-                {conversations.slice(0, 6).map((c) => {
+                {conversations.slice(0, 5).map((c) => {
                   const isCurrent = c.id === activeConversationId;
                   return (
                     <div
@@ -187,7 +205,7 @@ const Sidebar = ({
                       onClick={() => handleConversationClick(c.id)}
                       className={`group flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all cursor-pointer ${
                         isCurrent
-                          ? 'bg-[#202C4C] text-white font-semibold border border-indigo-400/30'
+                          ? 'bg-[#1E293B]/90 text-white font-semibold border border-indigo-500/40 shadow-xs'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`}
                     >
@@ -217,6 +235,20 @@ const Sidebar = ({
                     </div>
                   );
                 })}
+
+                {conversations.length > 5 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentView('conversations');
+                      if (setMobileOpen) setMobileOpen(false);
+                    }}
+                    className="w-full flex items-center justify-center gap-1 py-1 text-[11px] font-medium text-slate-400 hover:text-indigo-400 transition-colors cursor-pointer"
+                  >
+                    <span>Show more</span>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -227,14 +259,28 @@ const Sidebar = ({
           {/* Upgrade to Pro Card */}
           <div className="p-3.5 rounded-2xl bg-gradient-to-b from-[#162138] to-[#111B2E] border border-white/10 shadow-lg relative overflow-hidden">
             <div className="flex items-start gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-amber-500/30">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5 border border-amber-500/30 shadow-xs">
                 <Crown className="w-4 h-4" />
               </div>
-              <div>
-                <p className="text-xs font-bold text-white tracking-tight">Upgrade to Pro</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-white tracking-tight">Pro Plan</p>
                 <p className="text-[10px] text-slate-300 mt-0.5 leading-snug">
                   Unlock advanced analytics, larger file uploads, and more.
                 </p>
+              </div>
+            </div>
+
+            {/* Storage Progress Bar (Matches Mockup '2.4 GB / 10 GB') */}
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1 font-mono">
+                <span>Storage</span>
+                <span className="text-slate-300 font-semibold">2.4 GB / 10 GB</span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-indigo-500 to-purple-500"
+                  style={{ width: '24%' }}
+                />
               </div>
             </div>
 
@@ -252,7 +298,7 @@ const Sidebar = ({
           <div className="space-y-0.5 pt-1">
             <button
               type="button"
-              onClick={onOpenUpgrade}
+              onClick={onOpenSettings}
               className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
             >
               <Settings className="w-3.5 h-3.5 text-slate-400" />
@@ -261,7 +307,7 @@ const Sidebar = ({
 
             <button
               type="button"
-              onClick={() => alert("DataMind AI Help: Ask natural-language questions, explore trends, or use '⌘N' to start a new chat thread.")}
+              onClick={onOpenHelp}
               className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
             >
               <HelpCircle className="w-3.5 h-3.5 text-slate-400" />

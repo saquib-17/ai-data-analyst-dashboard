@@ -15,8 +15,8 @@ import { getApiUrl } from './utils/api';
 import { Sparkles, Crown, Check, X, Database, Cpu, ShieldCheck } from 'lucide-react';
 
 function App() {
-  const [currentView, setCurrentView] = useState('chat');
-  const [activeTab, setActiveTab] = useState('chat');
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('overview');
   const [datasets, setDatasets] = useState([]);
   const [activeDatasetId, setActiveDatasetId] = useState(null);
   const [activeDataset, setActiveDataset] = useState(null);
@@ -24,7 +24,10 @@ function App() {
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [proModalOpen, setProModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [searchTrigger, setSearchTrigger] = useState(null);
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
 
   // 1. Initial Data Fetching from SQLite Persistence
   useEffect(() => {
@@ -60,12 +63,6 @@ function App() {
         const data = await res.json();
         const list = data.datasets || [];
         setDatasets(list);
-
-        // Auto-select preferred 2024 dataset if present, or first dataset
-        if (list.length > 0 && !activeDatasetId) {
-          const pref = list.find((d) => d.filename && d.filename.includes('2024')) || list[0];
-          setActiveDatasetId(pref.id);
-        }
       }
     } catch (e) {
       console.warn('Failed to load datasets:', e);
@@ -84,7 +81,7 @@ function App() {
     }
   };
 
-  const fetchConversations = async () => {
+  const fetchConversations = async (targetIdToSelect = null) => {
     try {
       const res = await fetch(getApiUrl('/api/conversations'));
       if (res.ok) {
@@ -92,10 +89,20 @@ function App() {
         const list = data.conversations || [];
         setConversations(list);
 
-        // Auto-select initial active thread if none chosen
-        if (list.length > 0 && !activeConversationId) {
-          const pref = list.find((c) => c.title && c.title.includes('2024')) || list[0];
-          if (pref) setActiveConversationId(pref.id);
+        // Auto-select initial active thread if none chosen, or preserve target
+        const idToSelect = targetIdToSelect || activeConversationId || (list.length > 0 ? (list.find(c => c.title && c.title.includes('2024'))?.id || list[0].id) : null);
+        
+        if (idToSelect) {
+          const selected = list.find((c) => c.id === idToSelect);
+          setActiveConversationId(idToSelect);
+          if (selected) {
+            if (selected.datasetId) {
+              setActiveDatasetId(selected.datasetId);
+            } else {
+              setActiveDatasetId(null);
+              setActiveDataset(null);
+            }
+          }
         }
       }
     } catch (e) {
@@ -103,29 +110,96 @@ function App() {
     }
   };
 
-  // Switch to chat and start a fresh thread
-  const handleNewConversation = () => {
-    setActiveConversationId(null);
-    setCurrentView('chat');
-    setActiveTab('chat');
+  // Switch to chat and start a genuinely fresh thread (datasetId: null, no old dataset context)
+  const handleNewConversation = async () => {
+    if (isCreatingConversation) return; // Prevent double creation
+    setIsCreatingConversation(true);
+    try {
+      const res = await fetch(getApiUrl('/api/conversations'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'New Conversation',
+          datasetId: null // Crucial: A new conversation starts unattached
+        })
+      });
+
+      if (res.ok) {
+        const newConv = await res.json();
+        // Immediately reset all dataset state
+        setActiveDatasetId(null);
+        setActiveDataset(null);
+        setActiveConversationId(newConv.id);
+        setCurrentView('chat');
+        setActiveTab('chat');
+        await fetchConversations(newConv.id);
+      } else {
+        setActiveDatasetId(null);
+        setActiveDataset(null);
+        setActiveConversationId(null);
+        setCurrentView('chat');
+        setActiveTab('chat');
+      }
+    } catch (e) {
+      console.warn('Failed to create new conversation:', e);
+      setActiveDatasetId(null);
+      setActiveDataset(null);
+      setActiveConversationId(null);
+      setCurrentView('chat');
+      setActiveTab('chat');
+    } finally {
+      setIsCreatingConversation(false);
+    }
   };
 
   const handleSelectConversation = (convId) => {
     setActiveConversationId(convId);
     setCurrentView('chat');
     setActiveTab('chat');
+
+    const target = conversations.find((c) => c.id === convId);
+    if (target) {
+      if (target.datasetId) {
+        setActiveDatasetId(target.datasetId);
+      } else {
+        setActiveDatasetId(null);
+        setActiveDataset(null);
+      }
+    }
   };
 
-  const handleSelectDataset = (id) => {
-    setActiveDatasetId(id);
+  const handleAttachDatasetToConversation = async (datasetId) => {
+    if (!datasetId) return;
+    setActiveDatasetId(datasetId);
+    fetchDatasetSchema(datasetId);
+
+    if (activeConversationId) {
+      try {
+        await fetch(getApiUrl(`/api/conversations/${activeConversationId}`), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ datasetId })
+        });
+        setConversations((prev) =>
+          prev.map((c) => (c.id === activeConversationId ? { ...c, datasetId } : c))
+        );
+      } catch (err) {
+        console.error('Failed to attach dataset to conversation:', err);
+      }
+    }
+  };
+
+  const handleSelectDataset = async (id) => {
+    await handleAttachDatasetToConversation(id);
     setCurrentView('chat');
     setActiveTab('chat');
   };
 
-  const handleDatasetUploaded = (uploadedData) => {
-    if (uploadedData && uploadedData.datasetId) {
-      fetchDatasets();
-      setActiveDatasetId(uploadedData.datasetId);
+  const handleDatasetUploaded = async (uploadedData) => {
+    const id = typeof uploadedData === 'string' ? uploadedData : uploadedData?.datasetId;
+    if (id) {
+      await fetchDatasets();
+      await handleAttachDatasetToConversation(id);
       setCurrentView('chat');
       setActiveTab('chat');
     }
@@ -222,6 +296,11 @@ function App() {
             onSelectConversation={handleSelectConversation}
             onViewAllDatasets={() => setCurrentView('datasets')}
             onViewAllConversations={() => setCurrentView('conversations')}
+            onExecutePrompt={(promptText) => {
+              setCurrentView('chat');
+              setActiveTab('chat');
+              setSearchTrigger(promptText);
+            }}
           />
         </div>
       );
@@ -271,45 +350,45 @@ function App() {
     if (currentView === 'analytics-hub') {
       return (
         <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full space-y-6">
-          <div className="saas-card p-6 bg-gradient-to-r from-white via-indigo-50/20 to-purple-50/20">
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Analytics Hub</h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">
+          <div className="saas-card p-6 bg-gradient-to-r from-[#0E1628] via-[#111C30] to-[#0E1628] border border-white/10">
+            <h1 className="text-2xl font-extrabold text-[#F1F5F9] tracking-tight">Analytics Hub</h1>
+            <p className="text-xs text-slate-400 font-medium mt-1">
               Deterministic DuckDB columnar execution metrics and SQLite persistence health.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="saas-card p-5">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
+            <div className="saas-card p-5 bg-[#0E1628] border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center mb-3">
                 <Cpu className="w-5 h-5" />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">DuckDB Columnar Engine</h3>
-              <p className="text-xs text-emerald-600 font-semibold mt-1">Status: Active &amp; Isolated</p>
-              <p className="text-[11px] text-slate-500 mt-2">
+              <h3 className="text-sm font-bold text-[#F1F5F9]">DuckDB Columnar Engine</h3>
+              <p className="text-xs text-emerald-400 font-semibold mt-1">Status: Active &amp; Isolated</p>
+              <p className="text-[11px] text-slate-400 mt-2">
                 100% deterministic arithmetic. Sums, averages, rankings, and filters computed directly in DuckDB.
               </p>
             </div>
 
-            <div className="saas-card p-5">
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+            <div className="saas-card p-5 bg-[#0E1628] border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center mb-3">
                 <Database className="w-5 h-5" />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">SQLite Persistence</h3>
-              <p className="text-xs text-emerald-600 font-semibold mt-1">
+              <h3 className="text-sm font-bold text-[#F1F5F9]">SQLite Persistence</h3>
+              <p className="text-xs text-emerald-400 font-semibold mt-1">
                 {datasets.length} Datasets • {conversations.length} Threads
               </p>
-              <p className="text-[11px] text-slate-500 mt-2">
+              <p className="text-[11px] text-slate-400 mt-2">
                 ACID transactional metadata, cascading deletes, and WAL durability enabled.
               </p>
             </div>
 
-            <div className="saas-card p-5">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
+            <div className="saas-card p-5 bg-[#0E1628] border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center mb-3">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Dataset Isolation</h3>
-              <p className="text-xs text-emerald-600 font-semibold mt-1">UUID Enforced</p>
-              <p className="text-[11px] text-slate-500 mt-2">
+              <h3 className="text-sm font-bold text-[#F1F5F9]">Dataset Isolation</h3>
+              <p className="text-xs text-emerald-400 font-semibold mt-1">UUID Enforced</p>
+              <p className="text-[11px] text-slate-400 mt-2">
                 Zero cross-dataset leakage. All table names scoped to unique dataset IDs.
               </p>
             </div>
@@ -332,6 +411,10 @@ function App() {
             onSelectConversation={handleSelectConversation}
             onViewAllDatasets={() => setCurrentView('datasets')}
             onViewAllConversations={() => setCurrentView('conversations')}
+            onExecutePrompt={(promptText) => {
+              setActiveTab('chat');
+              setSearchTrigger(promptText);
+            }}
           />
         </div>
       );
@@ -386,19 +469,31 @@ function App() {
           <ConversationView
             datasetId={activeDatasetId}
             activeDataset={activeDataset}
+            datasets={datasets}
             activeConversationId={activeConversationId}
             searchTrigger={searchTrigger}
             onClearSearchTrigger={() => setSearchTrigger(null)}
             onConversationChange={(newId) => {
               setActiveConversationId(newId);
-              fetchConversations();
+              fetchConversations(newId);
             }}
+            onDatasetChange={(newDsId) => {
+              if (newDsId) {
+                setActiveDatasetId(newDsId);
+                fetchDatasetSchema(newDsId);
+              } else {
+                setActiveDatasetId(null);
+                setActiveDataset(null);
+              }
+            }}
+            onAttachDataset={handleAttachDatasetToConversation}
+            onUploadClick={() => setCurrentView('datasets')}
             onNewConversation={handleNewConversation}
           />
         </div>
 
         {/* Right Dataset Context Panel (Matches Reference Image) */}
-        <div className="hidden xl:block w-80 p-4 border-l border-slate-200/90 overflow-y-auto bg-[#F5F7FC] flex-shrink-0">
+        <div className="hidden xl:block w-80 p-4 border-l border-white/[0.08] overflow-y-auto bg-[#0A0F1D] flex-shrink-0">
           <DatasetOverviewPanel
             dataset={activeDataset}
             datasets={datasets}
@@ -415,13 +510,13 @@ function App() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F5F7FC] font-sans antialiased text-slate-800 overflow-x-hidden">
+    <div className="flex min-h-screen bg-[#06080F] font-sans antialiased text-[#F1F5F9] overflow-x-hidden">
       {/* 1. Left Dark Navy Sidebar */}
       <Sidebar
         currentView={currentView}
         setCurrentView={(view) => {
           setCurrentView(view);
-          if (view === 'dashboard') setActiveTab('overview');
+          if (view === 'chat') setActiveTab('chat');
           if (view === 'insights') setActiveTab('insights');
         }}
         conversations={conversations}
@@ -432,10 +527,12 @@ function App() {
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         onOpenUpgrade={() => setProModalOpen(true)}
+        onOpenSettings={() => setSettingsModalOpen(true)}
+        onOpenHelp={() => setHelpModalOpen(true)}
       />
 
       {/* 2. Workspace Body (Pushed by 240px Sidebar on Desktop) */}
-      <div className="flex-1 flex flex-col min-h-screen lg:pl-64 transition-all bg-[#F5F7FC]">
+      <div className="flex-1 flex flex-col min-h-screen lg:pl-64 transition-all bg-[#06080F]">
         {/* Top Header Search Bar & User Nav */}
         <TopNav
           onGlobalSearch={handleGlobalSearch}
@@ -457,19 +554,19 @@ function App() {
         ) : null}
 
         {/* Central Workspace Content */}
-        <main className="flex-1 flex flex-col overflow-y-auto bg-[#F5F7FC]">
+        <main className="flex-1 flex flex-col overflow-y-auto bg-[#06080F]">
           {renderMainContent()}
         </main>
       </div>
 
       {/* Upgrade to Pro Modal */}
       {proModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 relative animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#0E1628] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-white/10 relative animate-in zoom-in-95 duration-200">
             <button
               type="button"
               onClick={() => setProModalOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -478,10 +575,10 @@ function App() {
               <Crown className="w-6 h-6 text-amber-300" />
             </div>
 
-            <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">
+            <h3 className="text-xl font-extrabold text-[#F1F5F9] tracking-tight">
               DataMind AI Pro
             </h3>
-            <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+            <p className="text-xs text-slate-400 font-medium mt-1 leading-relaxed">
               Unlock enterprise-grade computational horsepower and deep collaborative analytics.
             </p>
 
@@ -493,8 +590,8 @@ function App() {
                 'Multi-user collaborative workspace & shared threads',
                 'Automated daily/weekly executive email digests'
               ].map((feature, idx) => (
-                <div key={idx} className="flex items-center gap-2.5 text-xs text-slate-700">
-                  <div className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                <div key={idx} className="flex items-center gap-2.5 text-xs text-slate-300">
+                  <div className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center flex-shrink-0">
                     <Check className="w-2.5 h-2.5 stroke-[3]" />
                   </div>
                   <span className="font-medium">{feature}</span>
@@ -506,9 +603,139 @@ function App() {
               <button
                 type="button"
                 onClick={() => setProModalOpen(false)}
-                className="btn-gradient w-full py-2.5 text-xs text-center cursor-pointer shadow-md"
+                className="btn-gradient w-full py-2.5 text-xs text-center cursor-pointer shadow-lg"
               >
                 Join Priority Waitlist
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {settingsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#0E1628] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-white/10 relative animate-in zoom-in-95 duration-200">
+            <button
+              type="button"
+              onClick={() => setSettingsModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center">
+                <Database className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#F1F5F9]">Application Settings</h3>
+                <p className="text-xs text-slate-400">Configure engine and presentation preferences</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-[#111C30] border border-white/10 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-200">DuckDB Columnar Engine</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">Active</span>
+                </div>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  Queries execute deterministically using zero-latency in-memory DuckDB tables.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#111C30] border border-white/10 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-200">SQLite Persistence (analyst.db)</span>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold">WAL Enabled</span>
+                </div>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  ACID conversation threads, messages, and uploaded datasets are preserved across restarts.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-300 block">Default Currency Symbol</label>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1.5 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 font-bold">₹ (INR)</span>
+                  <span className="px-3 py-1.5 rounded-lg bg-[#111C30] border border-white/10 text-slate-400 font-medium">$ (USD)</span>
+                  <span className="px-3 py-1.5 rounded-lg bg-[#111C30] border border-white/10 text-slate-400 font-medium">€ (EUR)</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-white/[0.08]">
+              <button
+                type="button"
+                onClick={() => setSettingsModalOpen(false)}
+                className="btn-gradient px-4 py-2 text-xs font-bold cursor-pointer shadow-sm transition-all"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Help & Support Modal */}
+      {helpModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#0E1628] rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-white/10 relative animate-in zoom-in-95 duration-200">
+            <button
+              type="button"
+              onClick={() => setHelpModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#F1F5F9]">DataMind AI Help &amp; Guide</h3>
+                <p className="text-xs text-slate-400">How to get the most out of your conversational analyst</p>
+              </div>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              <div className="p-3.5 rounded-xl bg-[#111C30] border border-white/10">
+                <p className="font-bold text-slate-200 mb-2">Keyboard Shortcuts</p>
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400">
+                  <div><kbd className="px-1.5 py-0.5 rounded bg-[#0B1220] border border-white/10 font-mono font-bold text-slate-300">⌘N / Ctrl+N</kbd> New Conversation</div>
+                  <div><kbd className="px-1.5 py-0.5 rounded bg-[#0B1220] border border-white/10 font-mono font-bold text-slate-300">Enter</kbd> Send Analysis Query</div>
+                  <div><kbd className="px-1.5 py-0.5 rounded bg-[#0B1220] border border-white/10 font-mono font-bold text-slate-300">Shift+Enter</kbd> Multiline Query</div>
+                  <div><kbd className="px-1.5 py-0.5 rounded bg-[#0B1220] border border-white/10 font-mono font-bold text-slate-300">Esc</kbd> Close Active Modal</div>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#111C30] border border-white/10">
+                <p className="font-bold text-slate-200 mb-1.5">Analytical Question Types</p>
+                <ul className="space-y-1 text-[11px] text-slate-400 list-disc list-inside">
+                  <li><strong className="text-slate-200">Rankings &amp; Top-N:</strong> "Show top 5 products by revenue"</li>
+                  <li><strong className="text-slate-200">Time Trends:</strong> "Show monthly sales trend from Jan to Dec"</li>
+                  <li><strong className="text-slate-200">Aggregations:</strong> "What is total revenue and average order value?"</li>
+                  <li><strong className="text-slate-200">Categorical Breakdowns:</strong> "Break down sales by region or category"</li>
+                </ul>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+                <p className="font-bold text-indigo-300 mb-0.5">Deterministic DuckDB Arithmetic</p>
+                <p className="text-[11px] text-indigo-200/80 leading-relaxed">
+                  Every number, metric, and percentage is calculated directly against actual dataset values using DuckDB SQL, never hallucinated by AI.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end mt-5 pt-3 border-t border-white/[0.08]">
+              <button
+                type="button"
+                onClick={() => setHelpModalOpen(false)}
+                className="btn-gradient px-4 py-2 text-xs font-bold cursor-pointer shadow-sm transition-all"
+              >
+                Got It
               </button>
             </div>
           </div>

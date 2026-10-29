@@ -198,12 +198,94 @@ function sleep(ms) {
 }
 
 /**
+ * Deterministic rule-based query parser fallback when GROQ_API_KEY is not configured
+ */
+function parseQueryRuleBased(query, availableColumns = []) {
+    const q = query.toLowerCase().trim();
+    let operation = '';
+    let metric = '';
+    let column = '';
+    let limit = null;
+    let filters = [];
+
+    // 1. Detect limit
+    const limitMatch = q.match(/\b(top|first|highest|lowest)\s+(\d+)\b/) || q.match(/\b(\d+)\s+(products|items|records|rows)\b/);
+    if (limitMatch) {
+        limit = parseInt(limitMatch[2] || limitMatch[1], 10);
+    }
+
+    // 2. Detect operation
+    if (q.includes('top') || q.includes('highest') || q.includes('best') || q.includes('lead')) {
+        operation = limit ? 'top' : (q.includes('by') ? 'group_by' : 'top');
+    } else if (q.includes('total') || q.includes('sum')) {
+        operation = 'sum';
+    } else if (q.includes('average') || q.includes('avg') || q.includes('mean')) {
+        operation = 'average';
+    } else if (q.includes('minimum') || q.includes('min') || q.includes('lowest')) {
+        operation = 'min';
+    } else if (q.includes('maximum') || q.includes('max')) {
+        operation = 'max';
+    } else if (q.includes('count') || q.includes('how many') || q.includes('number of')) {
+        operation = 'count';
+    } else if (q.includes('by') || q.includes('per') || q.includes('breakdown') || q.includes('group')) {
+        operation = 'group_by';
+    } else {
+        operation = 'filter';
+    }
+
+    // 3. Detect columns
+    for (const col of availableColumns) {
+        const colLower = col.toLowerCase();
+        if (q.includes(colLower)) {
+            if (/revenue|sales|profit|price|spend|budget|amount|cost|quantity|orders/i.test(col)) {
+                if (!metric) metric = col;
+            } else {
+                if (!column) column = col;
+            }
+        }
+    }
+
+    // Pick reasonable column/metric defaults if not explicitly named
+    if (!metric) {
+        const numericCol = availableColumns.find(c => /revenue|sales|profit|price|spend|budget|amount|cost|quantity|orders/i.test(c));
+        if (numericCol) metric = numericCol;
+    }
+
+    if ((operation === 'group_by' || operation === 'top') && !column) {
+        const catCol = availableColumns.find(c => /product|category|region|country|segment|name|channel/i.test(c));
+        if (catCol) column = catCol;
+    }
+
+    if (operation === 'top' && !limit) limit = 5;
+
+    return {
+        operation,
+        column,
+        metric,
+        limit,
+        filters
+    };
+}
+
+/**
  * Convert natural language query → structured JSON with schema and conversational follow-up awareness
  */
 async function convertQueryToJson(query, datasetInfo = {}, conversationContext = {}, retry = true) {
     const availableColumns = Array.isArray(datasetInfo)
         ? datasetInfo
         : (datasetInfo.columns || (datasetInfo.schema ? Object.keys(datasetInfo.schema) : []));
+
+    // If GROQ_API_KEY is not configured, use verified deterministic rule-based query parser
+    if (!process.env.GROQ_API_KEY) {
+        const fallback = parseQueryRuleBased(query, availableColumns);
+        const validation = validateAndSanitize(fallback, availableColumns);
+        if (validation.isValid) {
+            return validation.query;
+        }
+        return {
+            error: validation.error || "Could not interpret query. Try questions like 'top 5 products by revenue' or 'total revenue'."
+        };
+    }
 
     const schemaContext = formatSchemaContext(Array.isArray(datasetInfo) ? { columns: datasetInfo } : datasetInfo);
 

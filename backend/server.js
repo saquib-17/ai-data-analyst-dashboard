@@ -335,7 +335,7 @@ app.post('/api/analyze', analyzeLimiter, async (req, res, next) => {
       });
     }
 
-    // Optional Conversation persistence binding
+    // Conversation persistence binding - ensure conversation always exists and is tracked
     let activeConv = null;
     if (conversationId && typeof conversationId === 'string' && conversationId.trim()) {
       activeConv = conversationRepository.getConversationById(conversationId.trim(), userId);
@@ -344,13 +344,26 @@ app.post('/api/analyze', analyzeLimiter, async (req, res, next) => {
           id: conversationId.trim(),
           datasetId: dataset.id,
           userId,
-          title: query.trim().slice(0, 40)
+          title: query.trim().slice(0, 45)
         });
-      } else if (!activeConv.datasetId && dataset.id) {
-        conversationRepository.updateConversationDataset(activeConv.id, dataset.id, userId);
+      } else {
+        if (!activeConv.datasetId && dataset.id) {
+          conversationRepository.updateConversationDataset(activeConv.id, dataset.id, userId);
+        }
+        if (activeConv.title === 'New Conversation' || activeConv.title === 'New Analysis') {
+          conversationRepository.updateConversationTitle(activeConv.id, query.trim().slice(0, 45), userId);
+        }
       }
+    } else {
+      activeConv = conversationRepository.createConversation({
+        datasetId: dataset.id,
+        userId,
+        title: query.trim().slice(0, 45)
+      });
+    }
 
-      // Record user turn in conversation history
+    // Record user turn in conversation history
+    if (activeConv) {
       conversationRepository.appendMessage({
         conversationId: activeConv.id,
         role: 'user',

@@ -11,58 +11,70 @@ export default {
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       colors: {
-        // Flat aliases for zero-ambiguity PostCSS class generation
-        'sidebar-bg': '#0B1220',
-        'sidebar-card': '#111B2E',
-        'sidebar-active': '#202C4C',
-        'sidebar-text': '#E5EAF5',
-        'sidebar-muted': '#9AA8C1',
+        // Core cinematic dark tokens per prompt specifications
+        'main-bg': '#06080F',
+        'sidebar-bg': '#0A0F1D',
+        'card-primary': '#0E1628',
+        'card-elevated': '#111C30',
+        'input-bg': '#0B1220',
+
+        // Flat aliases for backwards compatibility
+        'sidebar-card': '#111C30',
+        'sidebar-active': '#1E293B',
+        'sidebar-text': '#F1F5F9',
+        'sidebar-muted': '#94A3B8',
         'sidebar-border': 'rgba(255, 255, 255, 0.08)',
 
-        'workspace-bg': '#F5F7FC',
-        'workspace-card': '#FFFFFF',
-        'workspace-text': '#172033',
-        'workspace-muted': '#64748B',
-        'workspace-border': '#E5EAF2',
+        'workspace-bg': '#06080F',
+        'workspace-card': '#0E1628',
+        'workspace-text': '#F1F5F9',
+        'workspace-muted': '#94A3B8',
+        'workspace-border': 'rgba(255, 255, 255, 0.08)',
 
-        'brand-indigo': '#5B5CF0',
+        'brand-indigo': '#6366F1',
         'brand-purple': '#8B5CF6',
-        'brand-purpleLight': '#F0EDFF',
+        'brand-violet': '#8B5CF6',
+        'brand-purpleLight': 'rgba(139, 92, 246, 0.15)',
         'brand-blue': '#3B82F6',
         'brand-cyan': '#06B6D4',
-        'brand-teal': '#0F9F78',
-        'brand-emerald': '#10B981',
-        'brand-orange': '#F97316',
+        'brand-teal': '#06B6D4',
+        'brand-emerald': '#34D399',
+        'brand-orange': '#F59E0B',
+        'brand-amber': '#FBBF24',
+        'brand-rose': '#FB7185',
         'brand-pink': '#EC4899',
-        'brand-dark': '#0B1220',
+        'brand-dark': '#06080F',
 
         // Nested structure for group styling
         sidebar: {
-          bg: '#0B1220',
-          card: '#111B2E',
-          active: '#202C4C',
-          text: '#E5EAF5',
-          muted: '#9AA8C1',
+          bg: '#0A0F1D',
+          card: '#111C30',
+          active: '#1E293B',
+          text: '#F1F5F9',
+          muted: '#94A3B8',
           border: 'rgba(255, 255, 255, 0.08)'
         },
         workspace: {
-          bg: '#F5F7FC',
-          card: '#FFFFFF',
-          text: '#172033',
-          muted: '#64748B',
-          border: '#E5EAF2'
+          bg: '#06080F',
+          card: '#0E1628',
+          text: '#F1F5F9',
+          muted: '#94A3B8',
+          border: 'rgba(255, 255, 255, 0.08)'
         },
         brand: {
-          indigo: '#5B5CF0',
+          indigo: '#6366F1',
           purple: '#8B5CF6',
-          purpleLight: '#F0EDFF',
+          violet: '#8B5CF6',
+          purpleLight: 'rgba(139, 92, 246, 0.15)',
           blue: '#3B82F6',
           cyan: '#06B6D4',
-          teal: '#0F9F78',
-          emerald: '#10B981',
-          orange: '#F97316',
+          teal: '#06B6D4',
+          emerald: '#34D399',
+          orange: '#F59E0B',
+          amber: '#FBBF24',
+          rose: '#FB7185',
           pink: '#EC4899',
-          dark: '#0B1220'
+          dark: '#06080F'
         }
       },
       boxShadow: {

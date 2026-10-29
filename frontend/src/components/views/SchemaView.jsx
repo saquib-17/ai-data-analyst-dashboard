@@ -1,10 +1,10 @@
 import React from 'react';
-import { Table, CheckCircle2, AlertCircle, ArrowLeft, MessageSquare } from 'lucide-react';
+import { Table, CheckCircle2, ArrowLeft, MessageSquare } from 'lucide-react';
 
 const SchemaView = ({ dataset, onAskAboutColumn, onBackToChat }) => {
   if (!dataset) {
     return (
-      <div className="saas-card p-12 text-center text-xs text-slate-400">
+      <div className="saas-card p-12 text-center text-xs text-slate-400 bg-[#0E1628] border border-white/10">
         No dataset selected. Please upload or select a dataset to inspect its schema.
       </div>
     );
@@ -20,15 +20,15 @@ const SchemaView = ({ dataset, onAskAboutColumn, onBackToChat }) => {
   const getTypeBadge = (type) => {
     switch (type) {
       case 'numeric':
-        return <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">Numeric (#)</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">Numeric (#)</span>;
       case 'date':
-        return <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold">Date (📅)</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-bold">Date (📅)</span>;
       case 'boolean':
-        return <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold">Boolean (✓)</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 text-[10px] font-bold">Boolean (✓)</span>;
       case 'categorical':
-        return <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold">Categorical</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[10px] font-bold">Categorical</span>;
       default:
-        return <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold">Text (Aa)</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-white/5 text-slate-300 border border-white/10 text-[10px] font-bold">Text (Aa)</span>;
     }
   };
 
@@ -37,18 +37,18 @@ const SchemaView = ({ dataset, onAskAboutColumn, onBackToChat }) => {
       {/* Header with Stats */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-[#F1F5F9] tracking-tight">
             Schema Profile &amp; Data Types
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-            Profiling results for <span className="font-bold text-slate-800">{filename}</span> ({rowCount.toLocaleString()} rows, {columnCount} columns)
+          <p className="text-xs sm:text-sm text-slate-400 font-medium mt-1">
+            Profiling results for <span className="font-bold text-slate-200">{filename}</span> ({rowCount.toLocaleString()} rows, {columnCount} columns)
           </p>
         </div>
 
         <button
           type="button"
           onClick={onBackToChat}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#111C30] hover:bg-[#16233D] border border-white/10 text-xs font-semibold text-slate-200 transition-colors shadow-md cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Chat</span>
@@ -57,26 +57,26 @@ const SchemaView = ({ dataset, onAskAboutColumn, onBackToChat }) => {
 
       {/* Summary KPI Badges */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="saas-card p-4">
-          <p className="text-xs font-semibold text-slate-500">Overall Completeness</p>
+        <div className="saas-card p-4 bg-[#0E1628] border border-white/10">
+          <p className="text-xs font-semibold text-slate-400">Overall Completeness</p>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-2xl font-extrabold text-emerald-600">{completeness}%</span>
-            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+            <span className="text-2xl font-extrabold text-emerald-400">{completeness}%</span>
+            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
           </div>
-          <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
-            <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${completeness}%` }} />
+          <div className="w-full bg-[#111C30] h-1.5 rounded-full mt-2 overflow-hidden">
+            <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${completeness}%` }} />
           </div>
         </div>
 
-        <div className="saas-card p-4">
-          <p className="text-xs font-semibold text-slate-500">Total Columns Profiled</p>
-          <p className="text-2xl font-extrabold text-slate-900 mt-1">{columnCount}</p>
+        <div className="saas-card p-4 bg-[#0E1628] border border-white/10">
+          <p className="text-xs font-semibold text-slate-400">Total Columns Profiled</p>
+          <p className="text-2xl font-extrabold text-[#F1F5F9] mt-1">{columnCount}</p>
           <p className="text-[11px] text-slate-500 mt-1">Detected via streaming ingestion</p>
         </div>
 
-        <div className="saas-card p-4">
-          <p className="text-xs font-semibold text-slate-500">Sampled Records</p>
-          <p className="text-2xl font-extrabold text-slate-900 mt-1">
+        <div className="saas-card p-4 bg-[#0E1628] border border-white/10">
+          <p className="text-xs font-semibold text-slate-400">Sampled Records</p>
+          <p className="text-2xl font-extrabold text-[#F1F5F9] mt-1">
             {Math.min(rowCount, 500).toLocaleString()}
           </p>
           <p className="text-[11px] text-slate-500 mt-1">Distinct value profiling sample</p>
@@ -84,10 +84,10 @@ const SchemaView = ({ dataset, onAskAboutColumn, onBackToChat }) => {
       </div>
 
       {/* Full Schema Table */}
-      <div className="saas-card p-5">
+      <div className="saas-card p-5 bg-[#0E1628] border border-white/10">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200/80">
+            <thead className="bg-[#111C30] text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-white/[0.08]">
               <tr>
                 <th className="py-3 px-3">Column Name</th>
                 <th className="py-3 px-3">Inferred Type</th>
@@ -97,7 +97,7 @@ const SchemaView = ({ dataset, onAskAboutColumn, onBackToChat }) => {
                 <th className="py-3 px-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-white/[0.06]">
               {columns.map((col) => {
                 const info = schema[col] || {};
                 const samples = info.sampleDistinctValues || info.sampleValues || [];
@@ -105,22 +105,22 @@ const SchemaView = ({ dataset, onAskAboutColumn, onBackToChat }) => {
                 const missingPercent = rowCount > 0 ? ((missingCount / rowCount) * 100).toFixed(1) : '0';
 
                 return (
-                  <tr key={col} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-3 font-bold text-slate-800 font-mono text-xs">
+                  <tr key={col} className="hover:bg-white/[0.03] transition-colors">
+                    <td className="py-3 px-3 font-bold text-[#F1F5F9] font-mono text-xs">
                       {col}
                     </td>
                     <td className="py-3 px-3">
                       {getTypeBadge(info.type)}
                     </td>
                     <td className="py-3 px-3">
-                      <span className={missingCount > 0 ? 'text-amber-600 font-medium' : 'text-slate-500'}>
+                      <span className={missingCount > 0 ? 'text-amber-400 font-medium' : 'text-slate-400'}>
                         {missingCount} ({missingPercent}%)
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-slate-600 max-w-xs truncate">
+                    <td className="py-3 px-3 text-slate-300 max-w-xs truncate">
                       {samples.length > 0 ? samples.slice(0, 4).join(', ') : '—'}
                     </td>
-                    <td className="py-3 px-3 text-slate-600 font-mono text-[11px]">
+                    <td className="py-3 px-3 text-slate-400 font-mono text-[11px]">
                       {info.stats ? (
                         <span>
                           Min: {info.stats.min} | Max: {info.stats.max} | Avg: {info.stats.avg}
@@ -133,7 +133,7 @@ const SchemaView = ({ dataset, onAskAboutColumn, onBackToChat }) => {
                       <button
                         type="button"
                         onClick={() => onAskAboutColumn?.(`What is the distribution of ${col}?`)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-brand-indigo text-brand-indigo hover:text-white text-xs font-semibold transition-colors"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#111C30] hover:bg-indigo-600 text-indigo-400 hover:text-white text-xs font-semibold transition-colors cursor-pointer border border-white/5"
                         title="Analyze column in chat"
                       >
                         <MessageSquare className="w-3 h-3" />
@@ -152,4 +152,3 @@ const SchemaView = ({ dataset, onAskAboutColumn, onBackToChat }) => {
 };
 
 export default SchemaView;
-
