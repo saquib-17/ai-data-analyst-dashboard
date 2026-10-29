@@ -1,41 +1,147 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-[#f8fafc] text-[#0f172a] font-sans antialiased transition-colors duration-300;
+  html, body {
+    background-color: #F5F7FC !important;
+    color: #172033 !important;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  
-  .dark body {
-    @apply bg-[#0f172a] text-[#e2e8f0];
+
+  ::selection {
+    background-color: #EDE9FE;
+    color: #5B5CF0;
   }
 }
 
+/* Explicit Fallback Utilities */
+.bg-workspace-bg {
+  background-color: #F5F7FC !important;
+}
+.text-workspace-text {
+  color: #172033 !important;
+}
+.text-workspace-muted {
+  color: #64748B !important;
+}
+.border-workspace-border {
+  border-color: #E5EAF2 !important;
+}
+.bg-sidebar-bg {
+  background-color: #0B1220 !important;
+}
+.text-sidebar-text {
+  color: #E5EAF5 !important;
+}
+.text-sidebar-muted {
+  color: #9AA8C1 !important;
+}
+.bg-sidebar-active {
+  background-color: #202C4C !important;
+}
+.border-sidebar-border {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 @layer components {
-  .glass-panel {
-    @apply bg-white border border-slate-200 rounded-2xl shadow-sm transition-all duration-300;
+  /* Premium SaaS Card Surface */
+  .saas-card {
+    background-color: #FFFFFF;
+    border-radius: 1rem;
+    border: 1px solid #E5EAF2;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
   
-  .dark .glass-panel {
-    @apply bg-[#1e293b] border-slate-700/50 shadow-md;
-  }
-  
-  .btn-primary {
-    @apply px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-medium rounded-xl shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.23)] hover:-translate-y-[1px] transition-all duration-300;
+  .saas-card:hover {
+    border-color: #D1D5DB;
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.06), 0 4px 8px -2px rgba(0, 0, 0, 0.02);
   }
 
-  .dark .btn-primary {
-    @apply from-indigo-600 to-purple-600 shadow-[0_4px_14px_0_rgba(99,102,241,0.39)];
+  /* Refined Glassmorphism Surfaces */
+  .glass-nav {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(229, 234, 242, 0.95);
   }
 
-  .input-glow {
-    @apply focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm;
+  .glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(229, 234, 242, 0.9);
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px -2px rgba(91, 92, 240, 0.05);
   }
 
-  .dark .input-glow {
-    @apply focus:ring-purple-500/20 focus:border-purple-500 bg-[#0f172a] border-slate-700 text-slate-200 placeholder:text-slate-500;
+  /* Electric Gradient Primary Button */
+  .btn-gradient {
+    background: linear-gradient(135deg, #5B5CF0 0%, #8B5CF6 100%);
+    color: #FFFFFF !important;
+    font-weight: 600;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 14px 0 rgba(91, 92, 240, 0.3);
+    transition: all 0.2s ease-in-out;
+  }
+
+  .btn-gradient:hover {
+    box-shadow: 0 6px 20px 0 rgba(91, 92, 240, 0.42);
+    transform: translateY(-1px);
+    opacity: 0.98;
+  }
+
+  .btn-gradient:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  /* Segmented Context Tab Pill */
+  .tab-pill-active {
+    background-color: #5B5CF0;
+    color: #FFFFFF !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(91, 92, 240, 0.25);
+  }
+
+  .tab-pill-inactive {
+    color: #64748B;
+    font-weight: 500;
+  }
+  .tab-pill-inactive:hover {
+    color: #0F172A;
+    background-color: rgba(255, 255, 255, 0.85);
   }
 }

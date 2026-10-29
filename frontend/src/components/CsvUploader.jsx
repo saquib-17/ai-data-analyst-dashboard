@@ -2,8 +2,10 @@ import React, { useState, useRef } from 'react';
 import { Trash2 } from 'lucide-react';
 import DataAnalysis from './DataAnalysis';
 import UploadCard from './UploadCard';
-const CsvUploader = () => {
+import { getApiUrl } from '../utils/api';
+const CsvUploader = ({ onDatasetLoaded, onDatasetCleared }) => {
   const [file, setFile] = useState(null);
+  const [datasetId, setDatasetId] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -12,7 +14,7 @@ const CsvUploader = () => {
   const [headers, setHeaders] = useState([]);
   const inputRef = useRef(null);
 
-  const API_URL = import.meta.env.VITE_API_URL;
+
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -73,7 +75,16 @@ const CsvUploader = () => {
     if (inputRef.current) inputRef.current.value = "";
   };
 
-  const resetData = () => {
+  const resetData = async () => {
+    if (datasetId) {
+      try {
+        await fetch(getApiUrl(`/api/dataset/${datasetId}`), { method: 'DELETE' });
+      } catch (e) {
+        console.warn("Failed to delete dataset from backend:", e);
+      }
+    }
+    setDatasetId(null);
+    onDatasetCleared?.();
     setCsvData([]);
     setHeaders([]);
     clearFile();
@@ -90,7 +101,7 @@ const CsvUploader = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch(`${API_URL}/api/upload`, {
+      const response = await fetch(getApiUrl('/api/upload'), {
         method: 'POST',
         body: formData,
       });
@@ -102,6 +113,10 @@ const CsvUploader = () => {
       }
 
       setCsvData(result.data);
+      if (result.datasetId) {
+        setDatasetId(result.datasetId);
+        onDatasetLoaded?.(result.datasetId);
+      }
       if (result.data.length > 0) {
         setHeaders(Object.keys(result.data[0]));
       }

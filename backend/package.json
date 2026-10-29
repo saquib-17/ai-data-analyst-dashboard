@@ -9,9 +9,11 @@
   },
   "dependencies": {
     "@google/genai": "^1.50.1",
+    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
     "dotenv": "^16.4.5",
+    "duckdb": "^1.4.4",
     "express": "^4.19.2",
     "multer": "^2.1.1",
     "openai": "^6.34.0"

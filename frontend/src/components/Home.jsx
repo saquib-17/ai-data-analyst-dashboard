@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import CsvUploader from './CsvUploader';
 import AIQueryBox from './AIQueryBox';
 
 const Home = () => {
+  const [datasetId, setDatasetId] = useState(null);
+
   return (
     <div className="flex flex-col items-center justify-start py-2 md:py-1 w-full space-y-3">
       
@@ -23,11 +25,14 @@ const Home = () => {
       {/* Main Dashboard Components */}
       <div className="w-full flex flex-col gap-8 md:gap-12 relative z-10">
         <section className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150">
-           <CsvUploader />
+           <CsvUploader 
+             onDatasetLoaded={(id) => setDatasetId(id)} 
+             onDatasetCleared={() => setDatasetId(null)} 
+           />
         </section>
         
         <section className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-          <AIQueryBox />
+          <AIQueryBox datasetId={datasetId} />
         </section>
       </div>
       
