@@ -61,7 +61,7 @@ const DatasetContextBar = ({
   const { filename, rowCount = 0, columnCount = 0, uploadedAt } = dataset;
 
   const formatUploadTime = (iso) => {
-    if (!iso) return '3 hours ago';
+    if (!iso) return 'Recently';
     const diff = Date.now() - new Date(iso).getTime();
     const hours = Math.floor(diff / 3600000);
     if (hours < 1) return 'Just now';
@@ -70,20 +70,20 @@ const DatasetContextBar = ({
     return `${days} days ago`;
   };
 
-  const fileSizeStr = rowCount > 10000 ? '2.4 MB' : (rowCount > 5000 ? '1.8 MB' : '1.2 MB');
+  const fileSizeStr = dataset.fileSize || (dataset.fileSizeBytes ? `${(dataset.fileSizeBytes / 1024).toFixed(1)} KB` : '1.0 KB');
   const uploadTimeStr = formatUploadTime(uploadedAt);
 
   return (
-    <div className="px-4 sm:px-6 py-2.5 bg-[#0A0F1D]/90 backdrop-blur-md border-b border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-20">
+    <div className="px-3 sm:px-6 py-2 sm:py-2.5 bg-[#0A0F1D]/90 backdrop-blur-md border-b border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3 relative z-20">
       {/* Left: Dataset File Identity */}
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center flex-shrink-0 shadow-xs">
+      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center flex-shrink-0 shadow-xs">
           <FileSpreadsheet className="w-4 h-4" />
         </div>
 
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-xs sm:text-sm font-bold text-white tracking-tight truncate max-w-xs sm:max-w-md">
+            <h2 className="text-xs sm:text-sm font-bold text-white tracking-tight truncate max-w-[180px] sm:max-w-md">
               {filename || 'dataset.csv'}
             </h2>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
@@ -92,16 +92,16 @@ const DatasetContextBar = ({
             </span>
           </div>
 
-          <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5 truncate max-w-[260px] sm:max-w-none">
             {rowCount.toLocaleString()} rows • {columnCount} columns • {fileSizeStr} • Uploaded {uploadTimeStr}
           </p>
         </div>
       </div>
 
       {/* Right: Context Tabs + Options */}
-      <div className="flex items-center gap-2 self-start md:self-auto overflow-x-auto max-w-full">
+      <div className="flex items-center gap-2 self-start md:self-auto overflow-x-auto max-w-full pb-1 md:pb-0 scrollbar-none">
         {/* Segmented Pill Tabs Container */}
-        <div className="flex items-center p-1 bg-[#0B1220] rounded-xl border border-white/[0.08]">
+        <div className="flex items-center p-1 bg-[#0B1220] rounded-xl border border-white/[0.08] overflow-x-auto scrollbar-none">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -110,7 +110,7 @@ const DatasetContextBar = ({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all whitespace-nowrap cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs transition-all whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'tab-pill-active'
                     : 'tab-pill-inactive'

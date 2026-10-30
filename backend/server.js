@@ -6,8 +6,9 @@ const csv = require('csv-parser');
 const fs = require('fs');
 const path = require('path');
 const { convertQueryToJson, generateInsight } = require('./services/queryParser');
-const { registerDataset, getDataset, listDatasets, releaseDataset } = require('./services/datasetRegistry');
+const { registerDataset, getDataset, getDatasetAsync, listDatasets, releaseDataset } = require('./services/datasetRegistry');
 const { executeAnalyticalQuery } = require('./services/analyticalEngine');
+const { computeDatasetSummary } = require('./services/datasetSummary');
 const { recommendChart } = require('./services/chartRecommender');
 const { generateSuggestions } = require('./services/suggestionGenerator');
 const { runMigrations } = require('./database/migrator');
@@ -155,7 +156,7 @@ app.get('/api/datasets', (req, res) => {
 /**
  * Get schema profile for a specific dataset
  */
-app.get('/api/dataset/:id/schema', (req, res) => {
+const handleGetDatasetSchema = (req, res) => {
   const dataset = getDataset(req.params.id);
   if (!dataset) {
     return res.status(404).json({
@@ -163,7 +164,48 @@ app.get('/api/dataset/:id/schema', (req, res) => {
     });
   }
 
+  // Helper to reliably find the persisted CSV path across environments
+  const resolveDatasetPath = (filePath) => {
+    if (!filePath) return null;
+    const candidates = [
+      filePath,
+      path.resolve(process.cwd(), filePath),
+      path.resolve(__dirname, filePath),
+      path.resolve(__dirname, '..', filePath),
+      path.resolve(__dirname, 'data', 'datasets', path.basename(filePath)),
+      path.resolve(process.cwd(), 'backend', 'data', 'datasets', path.basename(filePath))
+    ];
+    return candidates.find(p => fs.existsSync(p)) || null;
+  };
+
+  // Ensure data preview rows exist (load from CSV if dataset.data is empty)
+  let previewRows = Array.isArray(dataset.data) && dataset.data.length > 0 ? dataset.data : [];
+  if (previewRows.length === 0 && dataset.filePath) {
+    const fullPath = resolveDatasetPath(dataset.filePath);
+    if (fullPath) {
+      try {
+        const fileContent = fs.readFileSync(fullPath, 'utf8');
+        const lines = fileContent.split(/\r?\n/).filter(line => line.trim().length > 0);
+        if (lines.length > 1) {
+          const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+          previewRows = lines.slice(1, 101).map(line => {
+            const values = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
+            const row = {};
+            headers.forEach((h, idx) => {
+              const val = values[idx];
+              row[h] = !isNaN(Number(val)) && val !== '' ? Number(val) : val;
+            });
+            return row;
+          });
+        }
+      } catch (err) {
+        console.warn('[Schema Preview] Could not read CSV file for preview:', err.message);
+      }
+    }
+  }
+
   res.json({
+    id: dataset.id,
     datasetId: dataset.id,
     filename: dataset.filename,
     uploadedAt: dataset.uploadedAt,
@@ -171,14 +213,93 @@ app.get('/api/dataset/:id/schema', (req, res) => {
     columnCount: dataset.columnCount,
     columns: dataset.columns,
     schema: dataset.schema,
-    dataQuality: dataset.dataQuality
+    dataQuality: dataset.dataQuality,
+    data: previewRows
   });
+};
+
+app.get('/api/dataset/:id/schema', handleGetDatasetSchema);
+app.get('/api/datasets/:id/schema', handleGetDatasetSchema);
+
+/**
+ * Get genuine analytical summary metrics for dashboard visualization
+ */
+const handleGetDatasetSummary = async (req, res) => {
+  try {
+    const dataset = await getDatasetAsync(req.params.id);
+    if (!dataset) {
+      return res.status(404).json({
+        error: `Dataset with ID '${req.params.id}' was not found.`
+      });
+    }
+
+    const summary = await computeDatasetSummary(dataset);
+    res.json(summary);
+  } catch (err) {
+    console.error('[Dataset Summary Error]:', err.message);
+    res.status(500).json({ error: 'Failed to compute analytical dataset summary.' });
+  }
+};
+
+app.get('/api/dataset/:id/summary', handleGetDatasetSummary);
+app.get('/api/datasets/:id/summary', handleGetDatasetSummary);
+
+/**
+ * System Health & Storage Metrics
+ */
+app.get('/api/system/status', (req, res) => {
+  try {
+    const datasetsDir = path.resolve(__dirname, 'data', 'datasets');
+    const dbFile = path.resolve(__dirname, 'data', 'analyst.db');
+    let totalStorageBytes = 0;
+    if (fs.existsSync(datasetsDir)) {
+      const files = fs.readdirSync(datasetsDir);
+      for (const f of files) {
+        try {
+          totalStorageBytes += fs.statSync(path.join(datasetsDir, f)).size;
+        } catch (_) {}
+      }
+    }
+    if (fs.existsSync(dbFile)) {
+      try {
+        totalStorageBytes += fs.statSync(dbFile).size;
+      } catch (_) {}
+    }
+
+    const allDatasets = listDatasets();
+    const allConversations = conversationRepository.listConversations();
+    const maxAllocatedBytes = 10 * 1024 * 1024; // 10 MB workspace allocation
+
+    res.json({
+      engine: {
+        type: 'duckdb',
+        status: 'ready',
+        uptimeSeconds: Math.round(process.uptime())
+      },
+      database: {
+        status: 'connected',
+        datasetCount: allDatasets.length,
+        conversationCount: allConversations.length
+      },
+      storage: {
+        usedBytes: totalStorageBytes,
+        formattedUsed: totalStorageBytes >= 1048576 
+          ? `${(totalStorageBytes / 1048576).toFixed(1)} MB` 
+          : `${Math.max(1, Math.round(totalStorageBytes / 1024))} KB`,
+        maxBytes: maxAllocatedBytes,
+        formattedMax: '10 MB',
+        percentUsed: Number(Math.min(100, Math.max(0.1, (totalStorageBytes / maxAllocatedBytes) * 100)).toFixed(1))
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve system status.' });
+  }
 });
 
 /**
- * Release / disconnect a specific dataset
+ * Release / disconnect a specific dataset (supports both /api/dataset/:id and /api/datasets/:id)
  */
-app.delete('/api/dataset/:id', async (req, res) => {
+const handleDeleteDataset = async (req, res) => {
   const success = await releaseDataset(req.params.id);
   if (!success) {
     return res.status(404).json({
@@ -190,7 +311,10 @@ app.delete('/api/dataset/:id', async (req, res) => {
     message: "Dataset successfully released from memory.",
     datasetId: req.params.id
   });
-});
+};
+
+app.delete('/api/dataset/:id', handleDeleteDataset);
+app.delete('/api/datasets/:id', handleDeleteDataset);
 
 /**
  * ==========================================

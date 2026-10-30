@@ -44,9 +44,11 @@ const ChatComposer = ({
         {/* Attachment Paperclip Button */}
         <button
           type="button"
-          onClick={() => alert('Dataset attachment active. Using current active CSV dataset in DuckDB memory.')}
-          className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer flex-shrink-0"
-          title="Attached dataset active"
+          onClick={() => {
+            inputRef.current?.focus();
+          }}
+          className="p-2 rounded-xl text-indigo-400 hover:text-indigo-300 hover:bg-white/5 transition-colors cursor-pointer flex-shrink-0"
+          title="Active dataset attached in DuckDB memory"
         >
           <Paperclip className="w-4 h-4" />
         </button>

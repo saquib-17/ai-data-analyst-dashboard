@@ -1,3 +1,9 @@
+// SAFETY GUARD: Do not execute unless explicitly requested via --force-demo-seed
+if (!process.argv.includes('--force-demo-seed')) {
+  console.warn('[Seed Script] Demo seed script halted. To run intentionally in dev, pass --force-demo-seed');
+  process.exit(0);
+}
+
 const fs = require('fs');
 const path = require('path');
 const { getDb } = require('../database/db');

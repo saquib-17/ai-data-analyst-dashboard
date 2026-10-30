@@ -11,6 +11,7 @@ import PreviewView from './components/views/PreviewView';
 import InsightsView from './components/views/InsightsView';
 import ConversationsView from './components/views/ConversationsView';
 import ReportsView from './components/views/ReportsView';
+import ChartStudioView from './components/views/ChartStudioView';
 import { getApiUrl } from './utils/api';
 import { Sparkles, Crown, Check, X, Database, Cpu, ShieldCheck } from 'lucide-react';
 
@@ -27,12 +28,15 @@ function App() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [searchTrigger, setSearchTrigger] = useState(null);
+  const [explorerTab, setExplorerTab] = useState('schema');
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+  const [systemStatus, setSystemStatus] = useState(null);
 
-  // 1. Initial Data Fetching from SQLite Persistence
+  // 1. Initial Data Fetching from SQLite Persistence & System Health
   useEffect(() => {
     fetchDatasets();
     fetchConversations();
+    fetchSystemStatus();
   }, []);
 
   // 2. Fetch full schema when activeDatasetId changes
@@ -44,17 +48,21 @@ function App() {
     }
   }, [activeDatasetId]);
 
-  // 3. Global Keyboard Shortcut: ⌘N / Ctrl+N for New Conversation
+  // 3. Global Keyboard Shortcut: ⌘N / Ctrl+N for New Conversation, Esc for Modals
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         handleNewConversation();
+      } else if (e.key === 'Escape') {
+        if (proModalOpen) setProModalOpen(false);
+        if (settingsModalOpen) setSettingsModalOpen(false);
+        if (helpModalOpen) setHelpModalOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [proModalOpen, settingsModalOpen, helpModalOpen]);
 
   const fetchDatasets = async () => {
     try {
@@ -78,6 +86,18 @@ function App() {
       }
     } catch (e) {
       console.warn('Failed to load dataset schema:', e);
+    }
+  };
+
+  const fetchSystemStatus = async () => {
+    try {
+      const res = await fetch(getApiUrl('/api/system/status'));
+      if (res.ok) {
+        const data = await res.json();
+        setSystemStatus(data);
+      }
+    } catch (e) {
+      console.warn('Failed to load system status:', e);
     }
   };
 
@@ -189,19 +209,26 @@ function App() {
     }
   };
 
-  const handleSelectDataset = async (id) => {
+  const handleSelectDataset = async (id, targetView = null) => {
     await handleAttachDatasetToConversation(id);
-    setCurrentView('chat');
-    setActiveTab('chat');
+    if (targetView === 'keep') {
+      return;
+    }
+    const nextView = targetView || (currentView === 'dashboard' ? 'dashboard' : 'chat');
+    setCurrentView(nextView);
+    if (nextView === 'chat') {
+      setActiveTab('chat');
+    }
   };
 
   const handleDatasetUploaded = async (uploadedData) => {
     const id = typeof uploadedData === 'string' ? uploadedData : uploadedData?.datasetId;
     if (id) {
       await fetchDatasets();
+      await fetchSystemStatus();
       await handleAttachDatasetToConversation(id);
-      setCurrentView('chat');
-      setActiveTab('chat');
+      setCurrentView('dashboard');
+      setActiveTab('overview');
     }
   };
 
@@ -212,6 +239,7 @@ function App() {
       });
       if (res.ok) {
         setDatasets((prev) => prev.filter((d) => d.id !== datasetIdToDelete));
+        fetchSystemStatus();
         if (activeDatasetId === datasetIdToDelete) {
           const remaining = datasets.filter((d) => d.id !== datasetIdToDelete);
           setActiveDatasetId(remaining.length > 0 ? remaining[0].id : null);
@@ -229,6 +257,7 @@ function App() {
       });
       if (res.ok) {
         setConversations((prev) => prev.filter((c) => c.id !== convIdToDelete));
+        fetchSystemStatus();
         if (activeConversationId === convIdToDelete) {
           setActiveConversationId(null);
         }
@@ -285,7 +314,7 @@ function App() {
     // 1. Top-level standalone routes from Sidebar
     if (currentView === 'dashboard') {
       return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full">
+        <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full min-w-0">
           <DashboardOverview
             datasets={datasets}
             conversations={conversations}
@@ -397,10 +426,95 @@ function App() {
       );
     }
 
+    if (currentView === 'charts') {
+      return (
+        <ChartStudioView
+          dataset={activeDataset}
+          onUploadClick={() => setCurrentView('datasets')}
+          onViewDatasets={() => setCurrentView('datasets')}
+          onAskInChat={(q) => {
+            setCurrentView('chat');
+            setActiveTab('chat');
+            setSearchTrigger(q);
+          }}
+        />
+      );
+    }
+
+    if (currentView === 'insights') {
+      return (
+        <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full">
+          <InsightsView
+            dataset={activeDataset}
+            onAskQuestion={(q) => {
+              setCurrentView('chat');
+              setActiveTab('chat');
+              setSearchTrigger(q);
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (currentView === 'explorer') {
+      return (
+        <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full space-y-4">
+          <div className="flex items-center gap-2 border-b border-white/[0.08] pb-3">
+            <button
+              type="button"
+              onClick={() => setExplorerTab('schema')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                explorerTab === 'schema'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white bg-[#111C30]'
+              }`}
+            >
+              Schema Profiling
+            </button>
+            <button
+              type="button"
+              onClick={() => setExplorerTab('preview')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                explorerTab === 'preview'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white bg-[#111C30]'
+              }`}
+            >
+              Raw Data Preview
+            </button>
+          </div>
+
+          {explorerTab === 'preview' ? (
+            <PreviewView
+              dataset={activeDataset}
+              onBackToChat={() => {
+                setCurrentView('chat');
+                setActiveTab('chat');
+              }}
+              onExportCsv={handleExportCsv}
+            />
+          ) : (
+            <SchemaView
+              dataset={activeDataset}
+              onBackToChat={() => {
+                setCurrentView('chat');
+                setActiveTab('chat');
+              }}
+              onAskAboutColumn={(col) => {
+                setCurrentView('chat');
+                setActiveTab('chat');
+                setSearchTrigger(`Analyze column ${col} in detail`);
+              }}
+            />
+          )}
+        </div>
+      );
+    }
+
     // 2. Active Tab Views inside Dataset Context (Overview, Schema, Preview, Insights, Chat)
     if (activeTab === 'overview') {
       return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full">
+        <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
           <DashboardOverview
             datasets={datasets}
             conversations={conversations}
@@ -499,10 +613,12 @@ function App() {
             datasets={datasets}
             onSelectDataset={handleSelectDataset}
             onUploadClick={() => setCurrentView('datasets')}
+            onViewAllDatasets={() => setCurrentView('datasets')}
             onViewSchema={() => setActiveTab('schema')}
             onViewInsights={() => setActiveTab('insights')}
             onManageConversations={() => setCurrentView('conversations')}
             onExportCsv={handleExportCsv}
+            onOpenHelp={() => setHelpModalOpen(true)}
           />
         </div>
       </div>
@@ -529,16 +645,19 @@ function App() {
         onOpenUpgrade={() => setProModalOpen(true)}
         onOpenSettings={() => setSettingsModalOpen(true)}
         onOpenHelp={() => setHelpModalOpen(true)}
+        systemStatus={systemStatus}
       />
 
       {/* 2. Workspace Body (Pushed by 240px Sidebar on Desktop) */}
-      <div className="flex-1 flex flex-col min-h-screen lg:pl-64 transition-all bg-[#06080F]">
+      <div className="flex-1 flex flex-col min-h-screen lg:pl-64 transition-all bg-[#06080F] min-w-0">
         {/* Top Header Search Bar & User Nav */}
         <TopNav
           onGlobalSearch={handleGlobalSearch}
           onOpenMobileMenu={() => setMobileOpen(true)}
           activeDataset={activeDataset}
           onOpenUpgrade={() => setProModalOpen(true)}
+          onOpenSettings={() => setSettingsModalOpen(true)}
+          systemStatus={systemStatus}
         />
 
         {/* Active Dataset Context Bar with Tabs (displayed in chat or active dataset exploration) */}
@@ -554,15 +673,15 @@ function App() {
         ) : null}
 
         {/* Central Workspace Content */}
-        <main className="flex-1 flex flex-col overflow-y-auto bg-[#06080F]">
+        <main className={`flex-1 flex flex-col min-w-0 w-full ${currentView === 'chat' && activeTab === 'chat' ? 'overflow-hidden min-h-0' : 'overflow-y-auto'} bg-[#06080F]`}>
           {renderMainContent()}
         </main>
       </div>
 
       {/* Upgrade to Pro Modal */}
       {proModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-[#0E1628] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-white/10 relative animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#0E1628] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-white/10 relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <button
               type="button"
               onClick={() => setProModalOpen(false)}
@@ -614,8 +733,8 @@ function App() {
 
       {/* Settings Modal */}
       {settingsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-[#0E1628] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-white/10 relative animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#0E1628] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-white/10 relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <button
               type="button"
               onClick={() => setSettingsModalOpen(false)}
@@ -680,8 +799,8 @@ function App() {
 
       {/* Help & Support Modal */}
       {helpModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-[#0E1628] rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-white/10 relative animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#0E1628] rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-white/10 relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <button
               type="button"
               onClick={() => setHelpModalOpen(false)}
@@ -703,7 +822,7 @@ function App() {
             <div className="space-y-3.5 text-xs">
               <div className="p-3.5 rounded-xl bg-[#111C30] border border-white/10">
                 <p className="font-bold text-slate-200 mb-2">Keyboard Shortcuts</p>
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-400">
                   <div><kbd className="px-1.5 py-0.5 rounded bg-[#0B1220] border border-white/10 font-mono font-bold text-slate-300">⌘N / Ctrl+N</kbd> New Conversation</div>
                   <div><kbd className="px-1.5 py-0.5 rounded bg-[#0B1220] border border-white/10 font-mono font-bold text-slate-300">Enter</kbd> Send Analysis Query</div>
                   <div><kbd className="px-1.5 py-0.5 rounded bg-[#0B1220] border border-white/10 font-mono font-bold text-slate-300">Shift+Enter</kbd> Multiline Query</div>

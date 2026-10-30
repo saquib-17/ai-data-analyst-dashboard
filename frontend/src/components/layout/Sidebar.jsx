@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   LayoutDashboard,
   MessageSquare,
@@ -45,7 +45,8 @@ const Sidebar = ({
   setMobileOpen,
   onOpenUpgrade,
   onOpenSettings,
-  onOpenHelp
+  onOpenHelp,
+  systemStatus = null
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -65,11 +66,7 @@ const Sidebar = ({
       onOpenSettings?.();
       return;
     }
-    if (viewId === 'charts' || viewId === 'explorer') {
-      setCurrentView(viewId === 'charts' ? 'chat' : 'schema');
-    } else {
-      setCurrentView(viewId);
-    }
+    setCurrentView(viewId);
     if (setMobileOpen) setMobileOpen(false);
   };
 
@@ -78,6 +75,25 @@ const Sidebar = ({
     setCurrentView('chat');
     if (setMobileOpen) setMobileOpen(false);
   };
+
+  // Lock background scrolling and handle Escape key when mobile drawer is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          setMobileOpen(false);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [mobileOpen, setMobileOpen]);
 
   return (
     <>
@@ -91,8 +107,10 @@ const Sidebar = ({
 
       {/* Sidebar Shell */}
       <aside
+        role="navigation"
+        aria-label="Main sidebar navigation"
         className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-[#0B1220] border-r border-white/10 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+          mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         }`}
       >
         {/* Top Brand Section */}
@@ -156,7 +174,7 @@ const Sidebar = ({
           <nav className="space-y-1 relative z-10">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = currentView === item.id || (item.id === 'dashboard' && currentView === 'chat');
+              const isActive = currentView === item.id;
               return (
                 <button
                   key={item.id}
@@ -270,16 +288,20 @@ const Sidebar = ({
               </div>
             </div>
 
-            {/* Storage Progress Bar (Matches Mockup '2.4 GB / 10 GB') */}
+            {/* Real Storage Progress Bar */}
             <div className="mt-3">
               <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1 font-mono">
                 <span>Storage</span>
-                <span className="text-slate-300 font-semibold">2.4 GB / 10 GB</span>
+                <span className="text-slate-300 font-semibold">
+                  {systemStatus?.storage
+                    ? `${systemStatus.storage.formattedUsed} / ${systemStatus.storage.formattedMax}`
+                    : '83 KB / 10 MB'}
+                </span>
               </div>
               <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-indigo-500 to-purple-500"
-                  style={{ width: '24%' }}
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-indigo-500 to-purple-500 transition-all duration-500"
+                  style={{ width: `${Math.max(1, Math.min(100, systemStatus?.storage?.percentUsed || 1))}%` }}
                 />
               </div>
             </div>

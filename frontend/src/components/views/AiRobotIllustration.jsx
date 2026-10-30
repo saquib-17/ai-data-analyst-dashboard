@@ -50,18 +50,18 @@ export const AiRobotIllustration = ({ compact = false }) => {
   }
 
   return (
-    <div className="relative w-72 sm:w-80 h-72 sm:h-80 flex items-center justify-center select-none">
+    <div className="relative w-full max-w-[260px] sm:max-w-none sm:w-80 h-56 sm:h-80 flex items-center justify-center select-none mx-auto">
       {/* Background Multi-layer Ambient Lighting */}
-      <div className="absolute w-64 h-64 rounded-full bg-gradient-to-tr from-cyan-500/15 via-purple-600/25 to-pink-500/15 blur-3xl pointer-events-none" />
-      <div className="absolute w-44 h-44 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" />
+      <div className="absolute w-44 sm:w-64 h-44 sm:h-64 rounded-full bg-gradient-to-tr from-cyan-500/15 via-purple-600/25 to-pink-500/15 blur-3xl pointer-events-none" />
+      <div className="absolute w-32 sm:w-44 h-32 sm:h-44 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" />
 
       {/* Floating Mini Chart 1 (Top Left Line Graph) */}
-      <div className="absolute -top-2 left-2 z-20 p-2.5 rounded-xl bg-[#0E1628]/90 border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transform -rotate-6 animate-pulse" style={{ animationDuration: '6s' }}>
-        <div className="flex items-center gap-1.5 mb-1.5">
+      <div className="absolute top-1 left-1 sm:-top-2 sm:left-2 z-20 p-1.5 sm:p-2.5 rounded-xl bg-[#0E1628]/90 border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transform -rotate-6 animate-pulse" style={{ animationDuration: '6s' }}>
+        <div className="flex items-center gap-1.5 mb-1">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-          <span className="text-[9px] font-mono font-bold text-slate-300">Revenue Trend</span>
+          <span className="text-[7.5px] sm:text-[9px] font-mono font-bold text-slate-300">Revenue Trend</span>
         </div>
-        <svg width="64" height="28" viewBox="0 0 64 28" fill="none">
+        <svg width="48" height="20" viewBox="0 0 64 28" fill="none" className="sm:w-16 sm:h-7">
           <path d="M2 24 L16 16 L28 20 L42 8 L62 4" stroke="#06B6D4" strokeWidth="2" strokeLinecap="round" />
           <path d="M2 24 L16 16 L28 20 L42 8 L62 4 V 28 H 2 Z" fill="url(#miniLineGrad)" opacity="0.3" />
           <defs>
@@ -74,9 +74,9 @@ export const AiRobotIllustration = ({ compact = false }) => {
       </div>
 
       {/* Floating Mini Chart 2 (Middle Left Donut) */}
-      <div className="absolute bottom-6 -left-3 z-20 p-2.5 rounded-xl bg-[#0E1628]/90 border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transform -rotate-3">
-        <div className="flex items-center gap-2">
-          <div className="relative w-8 h-8">
+      <div className="absolute bottom-2 left-1 sm:bottom-6 sm:-left-3 z-20 p-1.5 sm:p-2.5 rounded-xl bg-[#0E1628]/90 border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transform -rotate-3">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="relative w-5 h-5 sm:w-8 sm:h-8">
             <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
               <path
                 d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
@@ -104,41 +104,41 @@ export const AiRobotIllustration = ({ compact = false }) => {
             </svg>
           </div>
           <div>
-            <p className="text-[8px] font-mono text-slate-400">Categories</p>
-            <p className="text-[10px] font-bold text-white">DuckDB Fast</p>
+            <p className="text-[6.5px] sm:text-[8px] font-mono text-slate-400">Categories</p>
+            <p className="text-[8px] sm:text-[10px] font-bold text-white leading-tight">DuckDB Fast</p>
           </div>
         </div>
       </div>
 
       {/* Speech Bubble (Top Right) */}
-      <div className="absolute -top-1 right-1 z-20 px-3 py-1.5 rounded-2xl bg-[#111C30]/95 border border-purple-500/30 shadow-[0_4px_20px_rgba(139,92,246,0.3)] backdrop-blur-md transform rotate-2">
-        <p className="text-[11px] font-semibold text-slate-200 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" />
-          <span>Ask questions in plain English</span>
+      <div className="absolute top-1 right-1 sm:-top-1 sm:right-1 z-20 px-2 py-1 sm:px-3 sm:py-1.5 rounded-2xl bg-[#111C30]/95 border border-purple-500/30 shadow-[0_4px_20px_rgba(139,92,246,0.3)] backdrop-blur-md transform rotate-2 max-w-[125px] sm:max-w-none">
+        <p className="text-[9px] sm:text-[11px] font-semibold text-slate-200 flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping flex-shrink-0" />
+          <span className="truncate">Ask questions in plain English</span>
         </p>
-        <div className="absolute -bottom-1.5 left-6 w-3 h-3 bg-[#111C30] border-r border-b border-purple-500/30 transform rotate-45" />
+        <div className="absolute -bottom-1.5 left-6 w-3 h-3 bg-[#111C30] border-r border-b border-purple-500/30 transform rotate-45 hidden sm:block" />
       </div>
 
       {/* Floating Mini Table Card (Bottom Right) */}
-      <div className="absolute -bottom-1 right-2 z-20 p-2.5 rounded-xl bg-[#0E1628]/90 border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transform rotate-6">
-        <div className="space-y-1 w-24">
-          <div className="flex items-center justify-between text-[8px] font-mono text-slate-400 border-b border-white/[0.08] pb-0.5">
+      <div className="absolute bottom-2 right-1 sm:-bottom-1 sm:right-2 z-20 p-1.5 sm:p-2.5 rounded-xl bg-[#0E1628]/90 border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transform rotate-6">
+        <div className="space-y-0.5 sm:space-y-1 w-16 sm:w-24">
+          <div className="flex items-center justify-between text-[6.5px] sm:text-[8px] font-mono text-slate-400 border-b border-white/[0.08] pb-0.5">
             <span>Product</span>
             <span>Sales</span>
           </div>
-          <div className="flex items-center justify-between text-[8px] font-mono text-slate-300">
-            <span className="truncate max-w-[45px]">MacBook</span>
+          <div className="flex items-center justify-between text-[6.5px] sm:text-[8px] font-mono text-slate-300">
+            <span className="truncate max-w-[32px] sm:max-w-[45px]">MacBook</span>
             <span className="text-cyan-400 font-bold">$186K</span>
           </div>
-          <div className="flex items-center justify-between text-[8px] font-mono text-slate-400">
-            <span className="truncate max-w-[45px]">iPhone</span>
+          <div className="flex items-center justify-between text-[6.5px] sm:text-[8px] font-mono text-slate-400">
+            <span className="truncate max-w-[32px] sm:max-w-[45px]">iPhone</span>
             <span className="text-purple-400 font-bold">$142K</span>
           </div>
         </div>
       </div>
 
       {/* Main 3D Spherical Robot Character */}
-      <div className="relative z-10 w-44 h-44 flex items-center justify-center">
+      <div className="relative z-10 w-28 h-28 sm:w-44 sm:h-44 flex items-center justify-center">
         <svg viewBox="0 0 160 160" className="w-full h-full drop-shadow-[0_0_35px_rgba(139,92,246,0.55)]">
           <defs>
             {/* Robot Head Metallic Gradient */}

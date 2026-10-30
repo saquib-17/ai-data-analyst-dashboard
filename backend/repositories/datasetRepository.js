@@ -1,12 +1,44 @@
+const fs = require('fs');
+const path = require('path');
 const { getDb } = require('../database/db');
+
+function resolvePath(filePath) {
+    if (!filePath) return null;
+    const candidates = [
+        filePath,
+        path.resolve(process.cwd(), filePath),
+        path.resolve(__dirname, '..', filePath),
+        path.resolve(__dirname, '..', 'data', 'datasets', path.basename(filePath)),
+        path.resolve(process.cwd(), 'backend', 'data', 'datasets', path.basename(filePath))
+    ];
+    return candidates.find(p => fs.existsSync(p)) || null;
+}
+
+function formatBytes(bytes) {
+    if (!bytes || isNaN(bytes)) return '0 B';
+    if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} MB`;
+    if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${bytes} B`;
+}
 
 function formatDatasetRecord(row) {
     if (!row) return null;
+
+    const resolved = resolvePath(row.file_path);
+    let fileSizeBytes = 0;
+    if (resolved && fs.existsSync(resolved)) {
+        try {
+            fileSizeBytes = fs.statSync(resolved).size;
+        } catch (_) {}
+    }
+
     return {
         id: row.id,
         userId: row.user_id,
         filename: row.filename,
-        filePath: row.file_path,
+        filePath: resolved || row.file_path,
+        fileSizeBytes,
+        fileSize: formatBytes(fileSizeBytes),
         rowCount: row.row_count,
         columnCount: row.column_count,
         columns: JSON.parse(row.columns_json || '[]'),

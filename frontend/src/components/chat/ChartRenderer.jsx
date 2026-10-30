@@ -163,12 +163,12 @@ const ChartRenderer = ({ config, rawData }) => {
     // 1. Horizontal Bar Chart (Matches left chart in Reference Image)
     if (effectiveType === 'horizontal-bar' || (effectiveType === 'bar' && data.length <= 6 && !config?.lines)) {
       return (
-        <div className="h-64 sm:h-72 w-full pt-2">
+        <div className="h-60 sm:h-72 w-full pt-2">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
               layout="vertical"
-              margin={{ top: 8, right: 48, left: 10, bottom: 5 }}
+              margin={{ top: 8, right: 36, left: 0, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255, 255, 255, 0.05)" />
               <XAxis
@@ -181,10 +181,10 @@ const ChartRenderer = ({ config, rawData }) => {
               <YAxis
                 type="category"
                 dataKey={xKey}
-                tick={{ fill: '#E2E8F0', fontSize: 11, fontWeight: 500 }}
+                tick={{ fill: '#E2E8F0', fontSize: 10, fontWeight: 500 }}
                 tickLine={false}
                 axisLine={false}
-                width={90}
+                width={72}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar

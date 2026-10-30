@@ -1,3 +1,9 @@
+// SAFETY GUARD: Do not execute unless explicitly requested via --force-demo-seed
+if (!process.argv.includes('--force-demo-seed')) {
+  console.warn('[Seed Script] Reference seed script halted. To run intentionally in dev, pass --force-demo-seed');
+  process.exit(0);
+}
+
 const { conversationRepository } = require('../repositories/conversationRepository');
 const datasetId = 'f41c8197-9960-4659-a3b3-f178ca094acc';
 

@@ -24,17 +24,19 @@ const DatasetOverviewPanel = ({
   datasets = [],
   onSelectDataset,
   onUploadClick,
+  onViewAllDatasets,
   onViewSchema,
   onViewInsights,
   onManageConversations,
-  onExportCsv
+  onExportCsv,
+  onOpenHelp
 }) => {
   const [showAllColumns, setShowAllColumns] = useState(false);
 
   // When no dataset is attached to current conversation
   if (!dataset) {
     return (
-      <aside className="w-full xl:w-80 flex-shrink-0 space-y-4">
+      <aside className="w-full xl:w-80 flex-shrink-0 grid grid-cols-1 md:grid-cols-3 xl:grid-cols-1 gap-4">
         {/* Card 1: Dataset Context */}
         <div className="saas-card p-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -62,7 +64,7 @@ const DatasetOverviewPanel = ({
             </button>
             <button
               type="button"
-              onClick={onViewInsights}
+              onClick={onViewAllDatasets || onUploadClick}
               className="flex-1 py-2 rounded-xl bg-[#111C30] hover:bg-[#16233D] border border-white/10 text-xs text-slate-300 font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
             >
               <FolderOpen className="w-3.5 h-3.5 text-indigo-400" />
@@ -114,7 +116,7 @@ const DatasetOverviewPanel = ({
 
             <button
               type="button"
-              onClick={onViewInsights}
+              onClick={onViewAllDatasets || onUploadClick}
               className="w-full p-2.5 rounded-xl bg-[#111C30]/60 hover:bg-[#16233D] border border-white/[0.06] hover:border-purple-500/30 flex items-center justify-between text-left transition-all cursor-pointer group"
             >
               <div className="flex items-center gap-2.5">
@@ -131,7 +133,7 @@ const DatasetOverviewPanel = ({
 
             <button
               type="button"
-              onClick={onViewSchema}
+              onClick={onOpenHelp || onViewSchema}
               className="w-full p-2.5 rounded-xl bg-[#111C30]/60 hover:bg-[#16233D] border border-white/[0.06] hover:border-blue-500/30 flex items-center justify-between text-left transition-all cursor-pointer group"
             >
               <div className="flex items-center gap-2.5">
@@ -148,7 +150,7 @@ const DatasetOverviewPanel = ({
 
             <button
               type="button"
-              onClick={onManageConversations}
+              onClick={onOpenHelp || onManageConversations}
               className="w-full p-2.5 rounded-xl bg-[#111C30]/60 hover:bg-[#16233D] border border-white/[0.06] hover:border-indigo-500/30 flex items-center justify-between text-left transition-all cursor-pointer group"
             >
               <div className="flex items-center gap-2.5">
@@ -184,6 +186,7 @@ const DatasetOverviewPanel = ({
 
   const columns = Object.keys(schema);
   const displayColumns = showAllColumns ? columns : columns.slice(0, 8);
+  const formattedSize = dataset.fileSize || (dataset.fileSizeBytes ? `${(dataset.fileSizeBytes / 1024).toFixed(1)} KB` : `${Math.max(1, Math.round((rowCount * (columns.length || 6) * 14) / 1024))} KB`);
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -199,7 +202,7 @@ const DatasetOverviewPanel = ({
   };
 
   return (
-    <aside className="w-full xl:w-80 flex-shrink-0 space-y-4">
+    <aside className="w-full xl:w-80 flex-shrink-0 grid grid-cols-1 md:grid-cols-3 xl:grid-cols-1 gap-4">
       {/* 1. Dataset Context Card (Matches Reference Image 2) */}
       <div className="saas-card p-4 space-y-3">
         <div className="flex items-center justify-between">
@@ -217,7 +220,7 @@ const DatasetOverviewPanel = ({
             {filename}
           </p>
           <p className="text-[11px] text-slate-400 mt-0.5">
-            {rowCount.toLocaleString()} rows • {columnCount || columns.length} columns • 2.4 MB
+            {rowCount.toLocaleString()} rows • {columnCount || columns.length} columns • {formattedSize}
           </p>
         </div>
 
@@ -232,7 +235,7 @@ const DatasetOverviewPanel = ({
           </button>
           <button
             type="button"
-            onClick={onViewInsights}
+            onClick={onViewAllDatasets || onUploadClick}
             className="flex-1 py-1.5 rounded-xl bg-[#111C30] hover:bg-[#16233D] border border-white/10 text-xs text-slate-300 font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
           >
             <FolderOpen className="w-3.5 h-3.5 text-indigo-400" />
@@ -310,7 +313,7 @@ const DatasetOverviewPanel = ({
 
           <button
             type="button"
-            onClick={onViewInsights}
+            onClick={onViewAllDatasets || onUploadClick}
             className="w-full p-2.5 rounded-xl bg-[#111C30]/60 hover:bg-[#16233D] border border-white/[0.06] hover:border-purple-500/30 flex items-center justify-between text-left transition-all cursor-pointer group"
           >
             <div className="flex items-center gap-2.5">
@@ -327,7 +330,7 @@ const DatasetOverviewPanel = ({
 
           <button
             type="button"
-            onClick={onViewSchema}
+            onClick={onOpenHelp || onViewSchema}
             className="w-full p-2.5 rounded-xl bg-[#111C30]/60 hover:bg-[#16233D] border border-white/[0.06] hover:border-blue-500/30 flex items-center justify-between text-left transition-all cursor-pointer group"
           >
             <div className="flex items-center gap-2.5">
@@ -344,7 +347,7 @@ const DatasetOverviewPanel = ({
 
           <button
             type="button"
-            onClick={onManageConversations}
+            onClick={onOpenHelp || onManageConversations}
             className="w-full p-2.5 rounded-xl bg-[#111C30]/60 hover:bg-[#16233D] border border-white/[0.06] hover:border-indigo-500/30 flex items-center justify-between text-left transition-all cursor-pointer group"
           >
             <div className="flex items-center gap-2.5">
